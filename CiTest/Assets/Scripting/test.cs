@@ -7,8 +7,8 @@ public class InversionTest : MonoBehaviour
         // スペースキーを押すと重力を反転させる（予定）
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            ReverseGravity() // ← あえてセミコロンを抜いています！
-        }
+            ReverseGravity(); // ← あえてセミコロンを抜いています！
+        
     }
 
     void ReverseGravity()
