@@ -3,7 +3,6 @@ name: Build App windows
 on:
   workflow_dispatch: { }
 
-# Node.js警告を消す設定
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -35,8 +34,8 @@ jobs:
 
       - name: Run Build
         run: |
-          # Unityを起動してビルドを実行
-          & ${{ matrix.matrix.unityPath }} -batchmode -quit -projectPath ${{ matrix.projectPath }} -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
+          # 変数名を正しく修正しました
+          & ${{ matrix.unityPath }} -batchmode -quit -projectPath ${{ matrix.projectPath }} -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
         uses: actions/upload-artifact@v4
