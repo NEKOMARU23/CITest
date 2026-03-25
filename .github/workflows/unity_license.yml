@@ -1,23 +1,42 @@
-name: Unity License Activation 🔑
+name: Build App windows
 
-on: workflow_dispatch
+on:
+  workflow_dispatch: { }
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  activation:
-    runs-on: ubuntu-latest
+  buildForWindowsBasedPlatforms:
+    name: Build for ${{ matrix.targetPlatform }}
+    # あなたのPCを「Runner」として登録している場合に動作します
+    runs-on: [ self-hosted, Windows ]
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+        buildMethod:
+          - BuildApp.Build
+        unityPath:
+          # あなたのPCに入っているUnity 6のパスに合わせました
+          - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Request manual activation file
-        # コミットIDを直接指定して、バージョンのエラーを強制回避
-        uses: game-ci/unity-request-activation-file@650047515b13b482260667e4125f46487e4757ba
+      - uses: actions/checkout@v4
         with:
-          unityVersion: 2022.3.10f1
-        id: get_alf
+          lfs: true
+          clean: false
+          submodules: recursive
 
-      - name: Upload artifact
+      - name: Run Build
+        run: |
+          ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
+
+      - name: Upload App
+        # 最新のv4に変更
         uses: actions/upload-artifact@v4
         with:
-          name: Unity_License_File
-          path: ${{ steps.get_alf.outputs.filePath }}
+          name: App_Develop
+          path: Builds/App/
+          retention-days: 7
