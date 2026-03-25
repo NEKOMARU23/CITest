@@ -7,7 +7,7 @@ public class InversionTest : MonoBehaviour
         // スペースキーを押すと重力を反転させる（予定）
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            ReverseGravity() ;// ← あえてセミコロンを抜いています！
+            ReverseGravity();// ← あえてセミコロンを抜いています！
         }   
     }
 
@@ -16,4 +16,5 @@ public class InversionTest : MonoBehaviour
         Physics2D.gravity *= -1;
         Debug.Log("Gravity Inverted: " + Physics2D.gravity);
     }
+
 }
