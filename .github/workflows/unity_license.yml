@@ -3,9 +3,13 @@ name: Build App windows
 on:
   workflow_dispatch: { }
 
-# ↓ ここを書き換えました（Bypass設定を追加）
+env:
+  # 将来の警告を消すための設定
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 defaults:
   run:
+    # Windowsのセキュリティ（Bypass）を考慮した設定
     shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
 
 jobs:
@@ -36,5 +40,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: App_Develop
+          # 先ほど作成したフォルダ「Builds/App/」を正確に指定しています
           path: Builds/App/
           retention-days: 7
