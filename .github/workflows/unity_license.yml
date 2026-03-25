@@ -10,7 +10,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Request manual activation file
-        uses: game-ci/unity-request-activation-file@main # あえて「main」指定で最新を取る
+        # バージョン固定をやめ、現在のGameCI標準の「action」を直接実行する形式
+        uses: game-ci/unity-request-activation-file@v4
+        with:
+          unityVersion: 2022.3.10f1 # あなたのUnityバージョンに合わせて適当でOKです
         id: get_alf
 
       - name: Upload artifact
