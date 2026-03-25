@@ -20,7 +20,7 @@ jobs:
           - BuildApp.Build
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
-   steps:
+    steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         with:
           lfs: true
