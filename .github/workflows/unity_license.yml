@@ -48,20 +48,30 @@ jobs:
       - name: Discord Notification
         if: always()
         run: |
+          # ステータスと色の判定
           $status = "${{ job.status }}"
           $color = if ($status -eq "success") { 3066993 } else { 15158332 }
-          $msg = if ($status -eq "success") { "Build Succeeded! Artifacts uploaded." } else { "Build Failed! Check the logs." }
+          $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Check the logs." }
           
+          # 追加情報の取得
+          $commitMsg = "${{ github.event.head_commit.message }}"
+          $author = "${{ github.actor }}"
+          $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # JSONボディの作成
           $body = @{
             embeds = @(@{
               title = "Unity Build Monitor"
               description = $msg
               color = $color
+              author = @{ name = "Triggered by: $author" }
               fields = @(
-                @{ name = "Repository"; value = "${{ github.repository }}"; inline = $true },
-                @{ name = "Status"; value = $status; inline = $true }
+                @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
+                @{ name = "Download / Logs"; value = "[Open GitHub Actions]($runUrl)"; inline = $false }
               )
+              footer = @{ text = "Repo: ${{ github.repository }}" }
             })
           } | ConvertTo-Json -Depth 5
           
+          # 通知の送信
           Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -ContentType "application/json"
