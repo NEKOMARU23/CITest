@@ -10,8 +10,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Request manual activation file
-        # バージョン指定ではなく、最新版（v4）を直接指定します
-        uses: game-ci/unity-request-activation-file@v4.2.4
+        # コミットIDを直接指定して、バージョンのエラーを強制回避
+        uses: game-ci/unity-request-activation-file@650047515b13b482260667e4125f46487e4757ba
         with:
           unityVersion: 2022.3.10f1
         id: get_alf
