@@ -3,10 +3,10 @@ name: Build App windows
 on:
   workflow_dispatch: { }
 
-# ↓ ここを pwsh から powershell に変えました
+# ↓ ここを書き換えました（Bypass設定を追加）
 defaults:
   run:
-    shell: powershell
+    shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
 
 jobs:
   buildForWindowsBasedPlatforms:
@@ -29,7 +29,6 @@ jobs:
           submodules: recursive
 
       - name: Run Build
-        # PowerShellで実行するための「&」を付けています
         run: |
           & ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
