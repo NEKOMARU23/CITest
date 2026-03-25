@@ -4,7 +4,6 @@ on:
   workflow_dispatch: { }
 
 env:
-  # Node.js 20の警告を抑制しつつ、確実にNode 24で実行させる
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 defaults:
@@ -13,50 +12,35 @@ defaults:
 
 jobs:
   buildForWindowsBasedPlatforms:
-    name: Build for ${{ matrix.targetPlatform }}
+    name: Build for StandaloneWindows64
     runs-on: [ self-hosted, Windows ]
-    strategy:
-      fail-fast: false
-      matrix:
-        targetPlatform:
-          - StandaloneWindows64
-        buildMethod:
-          - BuildApp.Build
-        unityPath:
-          - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           lfs: true
-          # フォルダ階層の混乱を防ぐため、チェックアウト先を明示的に固定
           path: .
           clean: false
-          submodules: recursive
 
       - name: Run Build
         run: |
-          # 1. リポジトリ内のどこかに「Assets」があるか自動検索する
-          # CITest/CiTest/Assets のような深い階層でも、これで親フォルダを見つけ出します
+          # 1. Assetsフォルダを検索
           $assetsPath = Get-ChildItem -Path . -Filter "Assets" -Recurse -Directory | Select-Object -First 1
+          if ($null -eq $assetsPath) { throw "Assets folder not found" }
           
-          if ($null -eq $assetsPath) {
-              Write-Error "Assetsフォルダが見つかりませんでした。リポジトリの構造を確認してください。"
-              exit 1
-          }
-
-          # Assetsの親フォルダ（プロジェクトルート）を取得
+          # 2. プロジェクトのルートパスを確定
           $projectRoot = $assetsPath.Parent.FullName
-          echo "Found Project Root: $projectRoot"
-
-          # 2. 自動で見つけたパスを渡してUnityを起動
-          & ${{ matrix.unityPath }} -batchmode -quit -projectPath "$projectRoot" -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
+          Write-Host "Found Project Root: $projectRoot"
+          
+          # 3. Unityのパスを直接指定（マトリックスを使わずエラーを回避）
+          $unityExe = "C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"
+          
+          # 4. 実行（文字列結合を避けて直接引数に渡す）
+          Start-Process -FilePath $unityExe -ArgumentList "-batchmode", "-quit", "-projectPath", "`"$projectRoot`"", "-buildTarget", "StandaloneWindows64", "-executeMethod", "BuildApp.Build", "-logFile", "-" -NoNewWindow -Wait
 
       - name: Upload App
         uses: actions/upload-artifact@v4
         with:
           name: App_Develop
-          # どこに生成されてもArtifactが見つかるようにワイルドカードで指定
           path: "**/Builds/App/*"
           retention-days: 7
