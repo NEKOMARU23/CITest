@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// 重力を反転させるテストクラス
+/// </summary>
 public class InversionTest : MonoBehaviour
 {
     void Update()
