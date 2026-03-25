@@ -24,7 +24,6 @@ jobs:
           - BuildApp.Build
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
-        # 正しい位置に直しました
         projectPath:
           - "."
     steps:
@@ -36,8 +35,8 @@ jobs:
 
       - name: Run Build
         run: |
-          # projectPath 変数を使ってUnityを起動します
-          & ${{ matrix.unityPath }} -batchmode -quit -projectPath ${{ matrix.projectPath }} -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
+          # Unityを起動してビルドを実行
+          & ${{ matrix.matrix.unityPath }} -batchmode -quit -projectPath ${{ matrix.projectPath }} -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
         uses: actions/upload-artifact@v4
