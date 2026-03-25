@@ -1,6 +1,6 @@
-usin UnityEngine;
+using UnityEngine;
 
-public class InversionTest : MonoBehaviour
+public class InversionTest : MonoBehaviou
 {
     void Update()
     {
