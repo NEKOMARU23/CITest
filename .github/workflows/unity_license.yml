@@ -10,7 +10,6 @@ defaults:
 jobs:
   buildForWindowsBasedPlatforms:
     name: Build for ${{ matrix.targetPlatform }}
-    # あなたのPCを「Runner」として登録している場合に動作します
     runs-on: [ self-hosted, Windows ]
     strategy:
       fail-fast: false
@@ -20,10 +19,10 @@ jobs:
         buildMethod:
           - BuildApp.Build
         unityPath:
-          # あなたのPCに入っているUnity 6のパスに合わせました
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
     steps:
-      - uses: actions/checkout@v4
+      # @v4 を 長いID に書き換えました
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         with:
           lfs: true
           clean: false
@@ -34,8 +33,8 @@ jobs:
           ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
-        # 最新のv4に変更
-        uses: actions/upload-artifact@v4
+        # @v4 を 長いID に書き換えました
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea23f8d3e55df21b883ee3b15 
         with:
           name: App_Develop
           path: Builds/App/
