@@ -3,9 +3,10 @@ name: Build App windows
 on:
   workflow_dispatch: { }
 
+# ↓ここを bash から pwsh に変えました
 defaults:
   run:
-    shell: bash
+    shell: pwsh
 
 jobs:
   buildForWindowsBasedPlatforms:
@@ -21,20 +22,19 @@ jobs:
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
     steps:
-      # 長いIDを消して、@v4 に書き換えます
-      - uses: actions/checkout@v4 
+      - uses: actions/checkout@v4
         with:
           lfs: true
           clean: false
           submodules: recursive
 
       - name: Run Build
+        # Windowsのパス形式に合わせて少し書き方を調整しました
         run: |
-          ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
+          & ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
-        # こちらも @v4 に書き換えます
-        uses: actions/upload-artifact@v4 
+        uses: actions/upload-artifact@v4
         with:
           name: App_Develop
           path: Builds/App/
