@@ -5,6 +5,8 @@ using UnityEngine;
 /// </summary>
 public class InversionTest : MonoBehaviour
 {
+
+    // Start is called before the first frame update
     void Update()
     {
         // スペースキーを押すと重力を反転させる（予定）
