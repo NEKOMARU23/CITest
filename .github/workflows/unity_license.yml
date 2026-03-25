@@ -26,20 +26,35 @@ jobs:
 
       - name: Run Build
         run: |
-          $assetsPath = Get-ChildItem -Path . -Filter "Assets" -Recurse -Directory | Select-Object -First 1
-          if ($null -eq $assetsPath) { throw "Assets folder not found" }
-          $projectRoot = $assetsPath.Parent.FullName
+          # 1. プロジェクトルートの特定（より確実に）
+          $assetsPath = Get-ChildItem -Path "Assets" -ErrorAction SilentlyContinue
+          if ($null -eq $assetsPath) {
+              $assetsPath = Get-ChildItem -Path "*/Assets" -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+
+          if ($null -eq $assetsPath) { 
+              Write-Host "--- Current Directory ---"
+              Get-ChildItem
+              throw "Assets folder not found. Unity project must be in the root or 1 level deep."
+          }
+          
+          $projectRoot = if ($assetsPath.PSIsContainer) { $assetsPath.Parent.FullName } else { $assetsPath.Directory.Parent.FullName }
+          Write-Host "Project Root: $projectRoot"
+
+          # 2. Unityの実行
           $unityExe = "C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"
           $logFile = "build.log"
           
           $process = Start-Process -FilePath $unityExe -ArgumentList "-batchmode", "-quit", "-projectPath", "`"$projectRoot`"", "-buildTarget", "StandaloneWindows64", "-executeMethod", "BuildApp.Build", "-logFile", "`"$logFile`"" -NoNewWindow -Wait -PassThru
           
+          # 3. 失敗時のエラー抽出
           if ($process.ExitCode -ne 0) {
               if (Test-Path $logFile) {
+                  # Unityのログから 'error' を含む行を抽出（CSエラーなど）
                   $errors = Get-Content $logFile | Select-String "error" | Select-Object -First 3
                   $errors | Out-File -FilePath "error_summary.txt" -Encoding utf8
               } else {
-                  "Unity log file not found." | Out-File -FilePath "error_summary.txt" -Encoding utf8
+                  "Unity process failed before log creation (ExitCode: $($process.ExitCode))" | Out-File -FilePath "error_summary.txt" -Encoding utf8
               }
               exit 1
           }
@@ -55,28 +70,34 @@ jobs:
       - name: Discord Notification
         if: always()
         run: |
+          # ステータス設定
           $status = "${{ job.status }}"
           $color = if ($status -eq "success") { 3066993 } else { 15158332 }
           $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Error detected." }
           
+          # 特殊文字対策（ヒアドキュメントを使用）
           $rawCommitMsg = @'
           ${{ github.event.head_commit.message }}
           '@.Trim()
+          $commitMsg = if ([string]::IsNullOrWhiteSpace($rawCommitMsg)) { "Manual Workflow Run / Merge" } else { $rawCommitMsg }
           
-          $commitMsg = if ([string]::IsNullOrWhiteSpace($rawCommitMsg)) { "Manual Workflow Run" } else { $rawCommitMsg }
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
+          # エラーサマリーの取得
           $errorSummary = "None"
           if (Test-Path "error_summary.txt") { $errorSummary = Get-Content "error_summary.txt" -Raw }
-          if ([string]::IsNullOrWhiteSpace($errorSummary)) { $errorSummary = "No specific error found in summary." }
+          if ([string]::IsNullOrWhiteSpace($errorSummary)) { $errorSummary = "Check GitHub Logs for details." }
 
+          # JSON作成
           $body = @{
             embeds = @(@{
               title = "Unity Build Monitor"
               description = $msg
               color = $color
               author = @{ name = "Triggered by: $author" }
+              # アイコン（サムネイル）を追加：Unityのロゴを表示（プロっぽくなります）
+              thumbnail = @{ url = "https://cdn.pixabay.com/photo/2021/09/20/03/24/unity-6639522_960_720.png" }
               fields = @(
                 @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
                 @{ name = "Build Error (Top 3)"; value = "``$errorSummary``"; inline = $false },
