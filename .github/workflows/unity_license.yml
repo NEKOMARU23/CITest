@@ -21,8 +21,8 @@ jobs:
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
     steps:
-      # 今見つけてくれた checkout v6.0.2 の SHA
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd 
+      # 長いIDを消して、@v4 に書き換えます
+      - uses: actions/checkout@v4 
         with:
           lfs: true
           clean: false
@@ -33,8 +33,8 @@ jobs:
           ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
-        # upload-artifact の v4.6.0 (最新) の SHA
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a6839979c1f40fb237517917 
+        # こちらも @v4 に書き換えます
+        uses: actions/upload-artifact@v4 
         with:
           name: App_Develop
           path: Builds/App/
