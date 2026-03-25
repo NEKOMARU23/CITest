@@ -14,6 +14,9 @@ public class InversionTest : MonoBehaviour
         }   
     }
 
+    /// <summary>
+    /// 重力を反転させる
+    /// </summary>
     void ReverseGravity()
     {
         Physics2D.gravity *= -1;
