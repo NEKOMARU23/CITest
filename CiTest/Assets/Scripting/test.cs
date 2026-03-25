@@ -1,4 +1,4 @@
-using UnityEngine;
+usin UnityEngine;
 
 public class InversionTest : MonoBehaviour
 {
@@ -8,7 +8,7 @@ public class InversionTest : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             ReverseGravity() ;// ← あえてセミコロンを抜いています！
-        
+        }   
     }
 
     void ReverseGravity()
