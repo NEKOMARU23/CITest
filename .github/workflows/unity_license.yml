@@ -2,6 +2,8 @@ name: Build App windows
 
 on:
   workflow_dispatch: { }
+  push:
+    branches: [ main ] # push時にも動くようにしておくとコミットメッセージが入ります
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -24,21 +26,27 @@ jobs:
 
       - name: Run Build
         run: |
-          # 1. Assets search
           $assetsPath = Get-ChildItem -Path . -Filter "Assets" -Recurse -Directory | Select-Object -First 1
           if ($null -eq $assetsPath) { throw "Assets folder not found" }
-          
-          # 2. Project Root
           $projectRoot = $assetsPath.Parent.FullName
-          Write-Host "Found Project Root: $projectRoot"
-          
-          # 3. Unity Path
           $unityExe = "C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"
           
-          # 4. Execute
-          Start-Process -FilePath $unityExe -ArgumentList "-batchmode", "-quit", "-projectPath", "`"$projectRoot`"", "-buildTarget", "StandaloneWindows64", "-executeMethod", "BuildApp.Build", "-logFile", "-" -NoNewWindow -Wait
+          # ログファイル出力を一時ファイルに設定
+          $logPath = "unity_build.log"
+          
+          # ビルド実行
+          $process = Start-Process -FilePath $unityExe -ArgumentList "-batchmode", "-quit", "-projectPath", "`"$projectRoot`"", "-buildTarget", "StandaloneWindows64", "-executeMethod", "BuildApp.Build", "-logFile", "`"$logPath`"" -NoNewWindow -Wait -PassThru
+          
+          # 失敗した場合、ログからエラー行を抽出して環境変数に保存
+          if ($process.ExitCode -ne 0) {
+              $errorLines = Get-Content $logPath | Select-String "error CS" | Select-Object -First 3
+              if ($null -eq $errorLines) { $errorLines = "Unknown build error (Check logs for details)" }
+              $errorLines | Out-File -FilePath "error_summary.txt" -Encoding utf8
+              exit 1
+          }
 
       - name: Upload App
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: App_Develop
@@ -48,17 +56,19 @@ jobs:
       - name: Discord Notification
         if: always()
         run: |
-          # ステータスと色の判定
           $status = "${{ job.status }}"
           $color = if ($status -eq "success") { 3066993 } else { 15158332 }
-          $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Check the logs." }
+          $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Error detected." }
           
-          # 追加情報の取得
+          # エラー情報の読み込み
+          $errorSummary = "None"
+          if (Test-Path "error_summary.txt") { $errorSummary = Get-Content "error_summary.txt" -Raw }
+          
           $commitMsg = "${{ github.event.head_commit.message }}"
+          if (-not $commitMsg) { $commitMsg = "Manual Workflow Run" }
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # JSONボディの作成
           $body = @{
             embeds = @(@{
               title = "Unity Build Monitor"
@@ -67,11 +77,11 @@ jobs:
               author = @{ name = "Triggered by: $author" }
               fields = @(
                 @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
+                @{ name = "Build Error (Top 3)"; value = "``$errorSummary``"; inline = $false },
                 @{ name = "Download / Logs"; value = "[Open GitHub Actions]($runUrl)"; inline = $false }
               )
               footer = @{ text = "Repo: ${{ github.repository }}" }
             })
           } | ConvertTo-Json -Depth 5
           
-          # 通知の送信
           Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -ContentType "application/json"
