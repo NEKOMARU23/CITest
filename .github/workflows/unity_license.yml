@@ -24,7 +24,7 @@ jobs:
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
         projectPath:
-          - "."
+          - "CITest"
     steps:
       - uses: actions/checkout@v4
         with:
