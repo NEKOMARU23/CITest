@@ -1,21 +1,72 @@
-- name: Discord Notification
+name: Build App windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+defaults:
+  run:
+    shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
+
+jobs:
+  buildForWindowsBasedPlatforms:
+    name: Build for StandaloneWindows64
+    runs-on: [ self-hosted, Windows ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: .
+          clean: false
+
+      - name: Run Build
+        run: |
+          $assetsPath = Get-ChildItem -Path . -Filter "Assets" -Recurse -Directory | Select-Object -First 1
+          if ($null -eq $assetsPath) { throw "Assets folder not found" }
+          $projectRoot = $assetsPath.Parent.FullName
+          $unityExe = "C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"
+          $logFile = "build.log"
+          
+          $process = Start-Process -FilePath $unityExe -ArgumentList "-batchmode", "-quit", "-projectPath", "`"$projectRoot`"", "-buildTarget", "StandaloneWindows64", "-executeMethod", "BuildApp.Build", "-logFile", "`"$logFile`"" -NoNewWindow -Wait -PassThru
+          
+          if ($process.ExitCode -ne 0) {
+              if (Test-Path $logFile) {
+                  $errors = Get-Content $logFile | Select-String "error" | Select-Object -First 3
+                  $errors | Out-File -FilePath "error_summary.txt" -Encoding utf8
+              } else {
+                  "Unity log file not found." | Out-File -FilePath "error_summary.txt" -Encoding utf8
+              }
+              exit 1
+          }
+
+      - name: Upload App
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: App_Develop
+          path: "**/Builds/App/*"
+          retention-days: 7
+
+      - name: Discord Notification
         if: always()
         run: |
           $status = "${{ job.status }}"
           $color = if ($status -eq "success") { 3066993 } else { 15158332 }
           $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Error detected." }
           
-          # 修正ポイント：GitHub変数を一度変数に入れてから処理する（エラー回避）
           $rawCommitMsg = @'
           ${{ github.event.head_commit.message }}
           '@.Trim()
           
           $commitMsg = if ([string]::IsNullOrWhiteSpace($rawCommitMsg)) { "Manual Workflow Run" } else { $rawCommitMsg }
-          
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # エラー情報の読み込み
           $errorSummary = "None"
           if (Test-Path "error_summary.txt") { $errorSummary = Get-Content "error_summary.txt" -Raw }
           if ([string]::IsNullOrWhiteSpace($errorSummary)) { $errorSummary = "No specific error found in summary." }
