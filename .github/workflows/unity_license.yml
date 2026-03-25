@@ -1,0 +1,20 @@
+name: Unity License Activation 🔑
+
+on: workflow_dispatch
+
+jobs:
+  activation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Request manual activation file
+        uses: game-ci/unity-request-activation-file@main # あえて「main」指定で最新を取る
+        id: get_alf
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity_License_File
+          path: ${{ steps.get_alf.outputs.filePath }}
