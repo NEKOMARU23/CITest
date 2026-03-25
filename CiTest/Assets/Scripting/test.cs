@@ -15,7 +15,7 @@ public class InversionTest : MonoBehaviour
     }
 
     /// <summary>
-    /// 重力を反転させる
+    /// 重力を反転させ
     /// </summary>
     void ReverseGravity()
     {
