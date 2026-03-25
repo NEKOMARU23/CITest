@@ -34,9 +34,8 @@ jobs:
 
       - name: Run Build
         run: |
-          # 変数名を正しく修正しました
-          & ${{ matrix.unityPath }} -batchmode -quit -projectPath ${{ matrix.projectPath }} -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
-
+          # フォルダ階層に合わせて projectPath を CITest/CiTest に修正
+          & ${{ matrix.unityPath }} -batchmode -quit -projectPath "CITest/CiTest" -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
       - name: Upload App
         uses: actions/upload-artifact@v4
         with:
