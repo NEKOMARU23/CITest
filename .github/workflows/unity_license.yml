@@ -20,8 +20,7 @@ jobs:
           - BuildApp.Build
         unityPath:
           - '"C:\Program Files\Unity\Hub\Editor\6000.3.1f1\Editor\Unity.exe"'
-    steps:
-      # @v4 を 長いID に書き換えました
+   steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         with:
           lfs: true
@@ -33,8 +32,8 @@ jobs:
           ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
       - name: Upload App
-        # @v4 を 長いID に書き換えました
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea23f8d3e55df21b883ee3b15 
+        # 最新の SHA (v4.6.0相当) に更新しました
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a6839979c1f40fb237517917 
         with:
           name: App_Develop
           path: Builds/App/
