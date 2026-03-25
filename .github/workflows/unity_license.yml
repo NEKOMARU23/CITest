@@ -3,10 +3,10 @@ name: Build App windows
 on:
   workflow_dispatch: { }
 
-# ↓ここを bash から pwsh に変えました
+# ↓ ここを pwsh から powershell に変えました
 defaults:
   run:
-    shell: pwsh
+    shell: powershell
 
 jobs:
   buildForWindowsBasedPlatforms:
@@ -29,7 +29,7 @@ jobs:
           submodules: recursive
 
       - name: Run Build
-        # Windowsのパス形式に合わせて少し書き方を調整しました
+        # PowerShellで実行するための「&」を付けています
         run: |
           & ${{ matrix.unityPath }} -batchmode -quit -projectPath . -buildTarget ${{ matrix.targetPlatform }} -executeMethod ${{ matrix.buildMethod }} -logFile -
 
