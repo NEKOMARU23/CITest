@@ -24,18 +24,22 @@ jobs:
           path: .
           clean: false
 
+      - name: Clean Old Logs
+        run: |
+          # 前回のビルドの残骸を掃除して、Discord通知が嘘をつかないようにする
+          $files = "build.log", "error_summary.txt", "unity_build.log"
+          foreach ($f in $files) { if (Test-Path $f) { Remove-Item $f -Force } }
+
       - name: Run Build
         run: |
-          # 1. プロジェクトルートの特定（より確実に）
+          # 1. プロジェクトルートの特定
           $assetsPath = Get-ChildItem -Path "Assets" -ErrorAction SilentlyContinue
           if ($null -eq $assetsPath) {
               $assetsPath = Get-ChildItem -Path "*/Assets" -ErrorAction SilentlyContinue | Select-Object -First 1
           }
 
           if ($null -eq $assetsPath) { 
-              Write-Host "--- Current Directory ---"
-              Get-ChildItem
-              throw "Assets folder not found. Unity project must be in the root or 1 level deep."
+              throw "Assets folder not found."
           }
           
           $projectRoot = if ($assetsPath.PSIsContainer) { $assetsPath.Parent.FullName } else { $assetsPath.Directory.Parent.FullName }
@@ -50,11 +54,11 @@ jobs:
           # 3. 失敗時のエラー抽出
           if ($process.ExitCode -ne 0) {
               if (Test-Path $logFile) {
-                  # Unityのログから 'error' を含む行を抽出（CSエラーなど）
+                  # エラーをUTF8で保存して文字化けを防ぐ
                   $errors = Get-Content $logFile | Select-String "error" | Select-Object -First 3
                   $errors | Out-File -FilePath "error_summary.txt" -Encoding utf8
               } else {
-                  "Unity process failed before log creation (ExitCode: $($process.ExitCode))" | Out-File -FilePath "error_summary.txt" -Encoding utf8
+                  "Unity process failed (ExitCode: $($process.ExitCode))" | Out-File -FilePath "error_summary.txt" -Encoding utf8
               }
               exit 1
           }
@@ -70,12 +74,15 @@ jobs:
       - name: Discord Notification
         if: always()
         run: |
+          # PowerShellの出力をUTF8に強制（文字化け対策の肝）
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
           # ステータス設定
           $status = "${{ job.status }}"
           $color = if ($status -eq "success") { 3066993 } else { 15158332 }
           $msg = if ($status -eq "success") { "Build Succeeded! Artifacts are ready." } else { "Build Failed! Error detected." }
           
-          # 特殊文字対策（ヒアドキュメントを使用）
+          # コミットメッセージの取得
           $rawCommitMsg = @'
           ${{ github.event.head_commit.message }}
           '@.Trim()
@@ -84,9 +91,9 @@ jobs:
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # エラーサマリーの取得
+          # エラーサマリーの取得（UTF8で読み込む）
           $errorSummary = "None"
-          if (Test-Path "error_summary.txt") { $errorSummary = Get-Content "error_summary.txt" -Raw }
+          if (Test-Path "error_summary.txt") { $errorSummary = Get-Content "error_summary.txt" -Raw -Encoding utf8 }
           if ([string]::IsNullOrWhiteSpace($errorSummary)) { $errorSummary = "Check GitHub Logs for details." }
 
           # JSON作成
@@ -96,7 +103,6 @@ jobs:
               description = $msg
               color = $color
               author = @{ name = "Triggered by: $author" }
-              # アイコン（サムネイル）を追加：Unityのロゴを表示（プロっぽくなります）
               thumbnail = @{ url = "https://cdn.pixabay.com/photo/2021/09/20/03/24/unity-6639522_960_720.png" }
               fields = @(
                 @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
@@ -107,5 +113,6 @@ jobs:
             })
           } | ConvertTo-Json -Depth 5
           
+          # Webhook送信（UTF8を明示）
           $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
-          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body $bytes -ContentType "application/json"
+          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body $bytes -ContentType "application/json; charset=utf-8"
