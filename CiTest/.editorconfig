@@ -1,0 +1,20 @@
+root = true
+
+[*.cs]
+#### 命名規則 (Naming Styles) ####
+
+# メソッドは PascalCase (例: MyMethod)
+dotnet_naming_rule.methods_must_be_pascal_case.severity = error
+dotnet_naming_rule.methods_must_be_pascal_case.symbols = method_symbols
+dotnet_naming_rule.methods_must_be_pascal_case.style = pascal_case_style
+
+dotnet_naming_symbols.method_symbols.applicable_kinds = method
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# ローカル変数は camelCase (例: myVariable)
+dotnet_naming_rule.local_variables_must_be_camel_case.severity = error
+dotnet_naming_rule.local_variables_must_be_camel_case.symbols = local_variable_symbols
+dotnet_naming_rule.local_variables_must_be_camel_case.style = camel_case_style
+
+dotnet_naming_symbols.local_variable_symbols.applicable_kinds = local
+dotnet_naming_style.camel_case_style.capitalization = camel_case

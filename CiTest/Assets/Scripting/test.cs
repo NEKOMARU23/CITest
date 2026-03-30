@@ -5,24 +5,24 @@ using UnityEngine;
 /// </summary>
 public class InversionTest : MonoBehaviour
 {
-
-    // Start is called before the first frame update
     void Update()
     {
-        // スペースキーを押すと重力を反転させる（予定）
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            ReverseGravity();// ← あえてセミコロンを抜いています！
+            // 【違反1】メソッド名を小文字から始めている (本来は PascalCase)
+            reverseGravity(); 
         }   
     }
 
     /// <summary>
-    /// 重力を反転させ
+    /// 重力を反転させる
     /// </summary>
-    void ReverseGravity()
+    void reverseGravity() // ← ここを小文字にしました
     {
-        Physics2D.gravity *= -1;
+        // 【違反2】ローカル変数を大文字から始めている (本来は camelCase)
+        Vector2 CurrentGravity = Physics2D.gravity; 
+        
+        Physics2D.gravity = CurrentGravity * -1;
         Debug.Log("Gravity Inverted: " + Physics2D.gravity);
     }
-
 }
