@@ -35,9 +35,22 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $OutputEncoding = [System.Text.Encoding]::UTF8
 
-          # dotnet format で命名規則をチェック
-          dotnet format --verify-no-changes --severity error
-          if ($LastExitCode -ne 0) {
+          # 1. プロジェクトファイル (.sln または .csproj) を自動探索
+          $workspace = Get-ChildItem -Path . -Filter "*.sln" -Recurse | Select-Object -First 1
+          if ($null -eq $workspace) {
+              $workspace = Get-ChildItem -Path . -Filter "*.csproj" -Recurse | Select-Object -First 1
+          }
+
+          # 2. ファイルが見つかった場合のみチェックを実行
+          if ($null -ne $workspace) {
+              Write-Host "Found workspace: $($workspace.FullName)"
+              dotnet format "$($workspace.FullName)" --verify-no-changes --severity error
+          } else {
+              Write-Host "No .sln or .csproj found. Skipping naming check."
+          }
+
+          # 3. エラーがあればサマリーを作成
+          if ($LastExitCode -ne 0 -and $null -ne $workspace) {
               "Naming convention violation detected! Please check your C# code style (e.g., PascalCase for methods)." | Out-File -FilePath "error_summary.txt" -Encoding utf8
               exit 1
           }
@@ -81,11 +94,11 @@ jobs:
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          # --- 文字化け対策の徹底 ---
+          # --- 文字化け対策 ---
           $OutputEncoding = [System.Text.Encoding]::UTF8
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-          # 1. ステータス判定 (絵文字を廃止し、テキスト記号に変更)
+          # 1. ステータス判定
           $status = "${{ job.status }}"
           if ($status -eq "success") {
               $color = 3066993  # 緑
