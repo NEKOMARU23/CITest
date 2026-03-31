@@ -32,7 +32,6 @@ jobs:
 
       - name: Check Code Style & Naming
         run: |
-          # 出力をUTF8に設定
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -86,18 +85,18 @@ jobs:
           $OutputEncoding = [System.Text.Encoding]::UTF8
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-          # 1. ステータス判定
+          # 1. ステータス判定 (絵文字を廃止し、テキスト記号に変更)
           $status = "${{ job.status }}"
           if ($status -eq "success") {
               $color = 3066993  # 緑
-              $msg = "✅ Build Succeeded!" 
-              $desc = "Artifacts are ready and naming is perfect."
+              $statusTag = "[SUCCESS]"
+              $desc = "All checks passed. Artifacts are ready."
               $errorSummary = "Perfect style!"
           } else {
               $color = 15158332 # 赤
-              $msg = "❌ Build Failed!"
-              $desc = "Check style or compiler errors below."
-              $errorSummary = "No details available."
+              $statusTag = "[FAILURE]"
+              $desc = "Action required: Build or Naming error found."
+              $errorSummary = "No details found."
               if (Test-Path "error_summary.txt") { 
                   $errorSummary = Get-Content "error_summary.txt" -Raw -Encoding utf8 
               }
@@ -108,16 +107,16 @@ jobs:
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # 3. JSONペイロード（絵文字を文字列に直接含める）
+          # 3. JSONペイロード構築
           $payload = @{
             embeds = @(@{
               title = "Unity CI Monitor"
-              description = "**$msg**`n$desc"
+              description = "**$statusTag**`n$desc"
               color = $color
-              author = @{ name = "By: $author" }
+              author = @{ name = "Triggered by: $author" }
               thumbnail = @{ url = "https://cdn.pixabay.com/photo/2021/09/20/03/24/unity-6639522_960_720.png" }
               fields = @(
-                @{ name = "Commit"; value = "``$commitMsg``"; inline = $false },
+                @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
                 @{ name = "Analysis"; value = "``$errorSummary``"; inline = $false },
                 @{ name = "Details"; value = "[View Logs on GitHub]($runUrl)"; inline = $false }
               )
