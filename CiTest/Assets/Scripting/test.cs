@@ -9,20 +9,20 @@ public class InversionTest : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            // 【違反1】メソッド名を小文字から始めている (本来は PascalCase)
-            reverseGravity(); 
+            // 【修正1】メソッド名を大文字から開始 (PascalCase)
+            ReverseGravity(); 
         }   
     }
 
     /// <summary>
     /// 重力を反転させる
     /// </summary>
-    void reverseGravity() // ← ここを小文字にしました
+    void ReverseGravity() // ← 修正：小文字から大文字へ
     {
-        // 【違反2】ローカル変数を大文字から始めている (本来は camelCase)
-        Vector2 CurrentGravity = Physics2D.gravity; 
+        // 【修正2】ローカル変数を小文字から開始 (camelCase)
+        Vector2 currentGravity = Physics2D.gravity; 
         
-        Physics2D.gravity = CurrentGravity * -1;
+        Physics2D.gravity = currentGravity * -1;
         Debug.Log("Gravity Inverted: " + Physics2D.gravity);
     }
 }
