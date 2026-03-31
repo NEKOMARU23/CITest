@@ -13,7 +13,8 @@ public class BuildApp
             .Select(s => s.path)
             .ToArray();
 
-        if (scenes.Length == 0) {
+        if (scenes.Length == 0)
+        {
             throw new System.Exception("ビルド対象のシーンがEditor Build Settingsに登録されていません！");
         }
 
@@ -22,7 +23,8 @@ public class BuildApp
         System.IO.Directory.CreateDirectory("Builds/App");
 
         // 3. ビルド実行
-        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions {
+        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
+        {
             scenes = scenes,
             locationPathName = outputPath,
             target = BuildTarget.StandaloneWindows64,
@@ -31,10 +33,13 @@ public class BuildApp
 
         Debug.Log("--- Unity Build Started ---");
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
-        
-        if (report.summary.result == BuildResult.Succeeded) {
+
+        if (report.summary.result == BuildResult.Succeeded)
+        {
             Debug.Log("--- Unity Build Succeeded! ---");
-        } else {
+        }
+        else
+        {
             Debug.LogError("--- Unity Build Failed! ---");
             // 終了コード 1 で落として GitHub Actions に失敗を知らせる
             EditorApplication.Exit(1);
