@@ -35,24 +35,26 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $OutputEncoding = [System.Text.Encoding]::UTF8
 
-          # 1. プロジェクトファイル (.sln または .csproj) を自動探索
+          # 1. プロジェクトファイルを自動探索
           $workspace = Get-ChildItem -Path . -Filter "*.sln" -Recurse | Select-Object -First 1
           if ($null -eq $workspace) {
               $workspace = Get-ChildItem -Path . -Filter "*.csproj" -Recurse | Select-Object -First 1
           }
 
-          # 2. ファイルが見つかった場合のみチェックを実行
           if ($null -ne $workspace) {
               Write-Host "Found workspace: $($workspace.FullName)"
-              dotnet format "$($workspace.FullName)" --verify-no-changes --severity error
+              # 【改善】--verify-no-changes を外し、まずは自動修正を試みる
+              dotnet format "$($workspace.FullName)" --severity error
+              
+              # 修正が発生したか確認 (Gitの差分があるかチェック)
+              $diff = git diff --name-only
+              if ($diff) {
+                  "Code style or whitespace issues found. Auto-formatting applied. Please check your IDE settings." | Out-File -FilePath "error_summary.txt" -Encoding utf8
+                  Write-Host "Formatting changes detected in: $diff"
+                  exit 1
+              }
           } else {
-              Write-Host "No .sln or .csproj found. Skipping naming check."
-          }
-
-          # 3. エラーがあればサマリーを作成
-          if ($LastExitCode -ne 0 -and $null -ne $workspace) {
-              "Naming convention violation detected! Please check your C# code style (e.g., PascalCase for methods)." | Out-File -FilePath "error_summary.txt" -Encoding utf8
-              exit 1
+              Write-Host "No workspace found. Skipping check."
           }
 
       - name: Run Build
