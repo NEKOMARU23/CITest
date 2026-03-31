@@ -32,7 +32,10 @@ jobs:
 
       - name: Check Code Style & Naming
         run: |
+          # 出力をUTF8に設定
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $OutputEncoding = [System.Text.Encoding]::UTF8
+
           # dotnet format で命名規則をチェック
           dotnet format --verify-no-changes --severity error
           if ($LastExitCode -ne 0) {
@@ -79,48 +82,50 @@ jobs:
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          # 1. UTF-8固定
+          # --- 文字化け対策の徹底 ---
           $OutputEncoding = [System.Text.Encoding]::UTF8
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-          # 2. ステータスに応じた色とメッセージの分岐
+          # 1. ステータス判定
           $status = "${{ job.status }}"
           if ($status -eq "success") {
-              $color = 3066993  # 緑色
-              $msg = "✅ Build Succeeded! Artifacts are ready."
-              $errorSummary = "No errors detected. Perfect style!"
+              $color = 3066993  # 緑
+              $msg = "✅ Build Succeeded!" 
+              $desc = "Artifacts are ready and naming is perfect."
+              $errorSummary = "Perfect style!"
           } else {
-              $color = 15158332 # 赤色
-              $msg = "❌ Build Failed! Check style or compiler errors."
-              $errorSummary = "Unknown error"
+              $color = 15158332 # 赤
+              $msg = "❌ Build Failed!"
+              $desc = "Check style or compiler errors below."
+              $errorSummary = "No details available."
               if (Test-Path "error_summary.txt") { 
                   $errorSummary = Get-Content "error_summary.txt" -Raw -Encoding utf8 
               }
           }
 
-          # 3. 変数準備
-          $commitMsg = if ($env:COMMIT_MESSAGE) { $env:COMMIT_MESSAGE.Trim() } else { "Manual Workflow Run" }
+          # 2. 変数準備
+          $commitMsg = if ($env:COMMIT_MESSAGE) { $env:COMMIT_MESSAGE.Trim() } else { "Manual Run" }
           $author = "${{ github.actor }}"
           $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # 4. JSONペイロードの作成
+          # 3. JSONペイロード（絵文字を文字列に直接含める）
           $payload = @{
             embeds = @(@{
-              title = "Unity Build Monitor (CI Check)"
-              description = $msg
+              title = "Unity CI Monitor"
+              description = "**$msg**`n$desc"
               color = $color
-              author = @{ name = "Triggered by: $author" }
+              author = @{ name = "By: $author" }
               thumbnail = @{ url = "https://cdn.pixabay.com/photo/2021/09/20/03/24/unity-6639522_960_720.png" }
               fields = @(
-                @{ name = "Latest Commit"; value = "``$commitMsg``"; inline = $false },
-                @{ name = "Build Analysis"; value = "``$errorSummary``"; inline = $false },
-                @{ name = "Action Link"; value = "[Open GitHub Actions]($runUrl)"; inline = $false }
+                @{ name = "Commit"; value = "``$commitMsg``"; inline = $false },
+                @{ name = "Analysis"; value = "``$errorSummary``"; inline = $false },
+                @{ name = "Details"; value = "[View Logs on GitHub]($runUrl)"; inline = $false }
               )
               footer = @{ text = "Repo: ${{ github.repository }}" }
             })
           }
 
-          # 5. Discordへ送信
+          # 4. 送信
           $json = $payload | ConvertTo-Json -Depth 5
           $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
           Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body $bytes -ContentType "application/json; charset=utf-8"
